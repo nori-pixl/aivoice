@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ボイスサイト</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 { color: #333; }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: none;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>AI読み上げ</h1>
+    <textarea id="text-to-read" placeholder="ここに読み上げたい文字を入力してください...">こんにちは、私はAIボイスです。</textarea>
+    
+    <select id="voice-select">
+        <option value="">読み込み中...</option>
+    </select>
+    
+    <button onclick="speak()">音声を再生</button>
+</div>
+
+<script>
+    const synth = window.speechSynthesis;
+    const textInput = document.getElementById('text-to-read');
+    const voiceSelect = document.getElementById('voice-select');
+    let voices = [];
+
+    // 音声リストを取得する関数
+    function populateVoiceList() {
+        voices = synth.getVoices();
+        
+        // 日本語の音声のみを取得
+        const japaneseVoices = voices.filter(voice => voice.lang.includes('ja'));
+        
+        voiceSelect.innerHTML = '';
+        japaneseVoices.forEach((voice, i) => {
+            const option = document.createElement('option');
+            option.textContent = `${voice.name} (${voice.lang})`;
+            option.setAttribute('data-lang', voice.lang);
+            option.setAttribute('data-name', voice.name);
+            voiceSelect.appendChild(option);
+        });
+    }
+
+    // ブラウザの音声設定が読み込まれたら実行
+    populateVoiceList();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+
+    // 読み上げ関数
+    function speak() {
+        if (synth.speaking) {
+            console.error('すでに話しています');
+            return;
+        }
+        if (textInput.value !== '') {
+            const utterThis = new SpeechSynthesisUtterance(textInput.value);
+            const selectedVoiceName = voiceSelect.selectedOptions[0].getAttribute('data-name');
+            
+            for (let i = 0; i < voices.length; i++) {
+                if (voices[i].name === selectedVoiceName) {
+                    utterThis.voice = voices[i];
+                }
+            }
+            // 速度やピッチの設定（オプション）
+            utterThis.pitch = 1;
+            utterThis.rate = 1;
+            
+            synth.speak(utterThis);
+        }
+    }
+</script>
+
+</body>
+</html>
