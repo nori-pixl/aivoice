@@ -56,7 +56,7 @@
 
 <div class="container">
     <h1>AI読み上げ</h1>
-    <textarea id="text-to-read" placeholder="ここに読み上げたい文字を入力してください...">こんにちは、私はAIボイスです。</textarea>
+    <textarea id="text-to-read" placeholder="ここに読み上げたい文字を入力してください... / Enter text here..."></textarea>
     
     <select id="voice-select">
         <option value="">読み込み中...</option>
@@ -75,17 +75,36 @@
     function populateVoiceList() {
         voices = synth.getVoices();
         
-        // 日本語の音声のみを取得
-        const japaneseVoices = voices.filter(voice => voice.lang.includes('ja'));
+        // 日本語（ja）と英語（en）の音声を取得
+        const filteredVoices = voices.filter(voice => voice.lang.includes('ja') || voice.lang.includes('en'));
         
+        // 言語コードでソート（日本語を上、英語を下にするなど並び替え用）
+        filteredVoices.sort((a, b) => a.lang.localeCompare(b.lang));
+
         voiceSelect.innerHTML = '';
-        japaneseVoices.forEach((voice, i) => {
+        
+        if (filteredVoices.length === 0) {
+            const option = document.createElement('option');
+            option.textContent = '利用可能な音声がありません';
+            voiceSelect.appendChild(option);
+            return;
+        }
+
+        filteredVoices.forEach((voice) => {
             const option = document.createElement('option');
             option.textContent = `${voice.name} (${voice.lang})`;
             option.setAttribute('data-lang', voice.lang);
             option.setAttribute('data-name', voice.name);
             voiceSelect.appendChild(option);
         });
+
+        // 初期テキストの設定（選択された最初の音声が英語なら英語、日本語なら日本語にする）
+        if (textInput.value === '') {
+            const firstVoice = voiceSelect.selectedOptions[0]?.getAttribute('data-lang') || '';
+            textInput.value = firstVoice.includes('en') 
+                ? 'Hello, I am an AI voice.' 
+                : 'こんにちは、私はAIボイスです。';
+        }
     }
 
     // ブラウザの音声設定が読み込まれたら実行
@@ -102,13 +121,15 @@
         }
         if (textInput.value !== '') {
             const utterThis = new SpeechSynthesisUtterance(textInput.value);
-            const selectedVoiceName = voiceSelect.selectedOptions[0].getAttribute('data-name');
             
-            for (let i = 0; i < voices.length; i++) {
-                if (voices[i].name === selectedVoiceName) {
-                    utterThis.voice = voices[i];
+            if (voiceSelect.selectedOptions.length > 0) {
+                const selectedVoiceName = voiceSelect.selectedOptions[0].getAttribute('data-name');
+                const selectedVoice = voices.find(voice => voice.name === selectedVoiceName);
+                if (selectedVoice) {
+                    utterThis.voice = selectedVoice;
                 }
             }
+            
             // 速度やピッチの設定（オプション）
             utterThis.pitch = 1;
             utterThis.rate = 1;
